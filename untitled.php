@@ -12,9 +12,9 @@ Author URI: http://www.pixelpusher.ninja
 */
 
 require 'Client.php';
-require_once '/homepages/19/d402940043/htdocs/TimeWise2014/wp-admin/includes/image.php';
-require_once '/homepages/19/d402940043/htdocs/TimeWise2014/wp-admin/includes/file.php';
-require_once '/homepages/19/d402940043/htdocs/TimeWise2014/wp-admin/includes/media.php';
+require_once ABSPATH . 'wp-admin/includes/image.php';
+require_once ABSPATH . 'wp-admin/includes/file.php';
+require_once ABSPATH . 'wp-admin/includes/media.php';
 
 class Grabbber {
 
@@ -33,9 +33,9 @@ function __construct(){
 	
 	add_action('admin_menu', array($this, 'add_page'));
 	
-	register_activation_hook('/homepages/19/d402940043/htdocs/TimeWise2014/wp-content/plugins/Grabbber/untitled.php', array($this, 'on_activate'));
-	register_deactivation_hook('/homepages/19/d402940043/htdocs/TimeWise2014/wp-content/plugins/Grabbber/untitled.php', array($this, 'on_deactivate'));
-	register_uninstall_hook('/homepages/19/d402940043/htdocs/TimeWise2014/wp-content/plugins/Grabbber/untitled.php', array($this, 'on_uninstall'));
+	register_activation_hook(ABSPATH . 'wp-content/plugins/Grabbber/untitled.php', array($this, 'on_activate'));
+	register_deactivation_hook(ABSPATH . 'wp-content/plugins/Grabbber/untitled.php', array($this, 'on_deactivate'));
+	register_uninstall_hook(ABSPATH . 'wp-content/plugins/Grabbber/untitled.php', array($this, 'on_uninstall'));
 	
 	add_action('my_task_hook', $this->grab_freebies());
 }
@@ -56,7 +56,8 @@ public function on_uninstall()
 
         // Important: Check if the file is the one
         // that was registered during the uninstall hook.
-        if ( '/homepages/19/d402940043/htdocs/TimeWise2014/wp-content/plugins/Grabbber/untitled.php' != WP_UNINSTALL_PLUGIN )
+        // can also use plugin_dir_path( __FILE__ ) . '/untitled.php' to get path!
+        if (ABSPATH . 'wp-content/plugins/Grabbber/untitled.php' != WP_UNINSTALL_PLUGIN )
             return;
 
         # Uncomment the following line to see the function in action
