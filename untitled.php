@@ -6,15 +6,21 @@
 /*
 Plugin Name: Grabbber
 Description: Plugin will grab freebie items from the Dribbble API and generate content on native site
-Version: 1.3
+Version: 1.5.1
 Author: Evan D'Elia
 Author URI: http://www.pixelpusher.ninja
 */
 
-require 'Client.php';
+require_once 'Client.php';
 require_once ABSPATH . 'wp-admin/includes/image.php';
 require_once ABSPATH . 'wp-admin/includes/file.php';
 require_once ABSPATH . 'wp-admin/includes/media.php';
+
+function new_attachment($att_id){
+    // the post this was sideloaded into is the attachments parent!
+    $p = get_post($att_id);
+    update_post_meta($p->post_parent,'_thumbnail_id',$att_id);
+}
 
 class Grabbber {
 
@@ -25,9 +31,13 @@ private $default_options = array(
 );
 
 function __construct(){
-	if ( ! wp_next_scheduled( 'my_task_hook' ) ) {
+    //add_action('init', $this->check_sched());
+    
+    if ( ! wp_next_scheduled( 'my_task_hook' ) ) {
   		wp_schedule_event( time(), 'hourly', 'my_task_hook' );
 	}
+	
+	add_action('my_task_hook', $this->grab_freebies());
 
 	add_action('admin_init', array($this, 'admin_init'));
 	
@@ -36,8 +46,6 @@ function __construct(){
 	register_activation_hook(ABSPATH . 'wp-content/plugins/Grabbber/untitled.php', array($this, 'on_activate'));
 	register_deactivation_hook(ABSPATH . 'wp-content/plugins/Grabbber/untitled.php', array($this, 'on_deactivate'));
 	register_uninstall_hook(ABSPATH . 'wp-content/plugins/Grabbber/untitled.php', array($this, 'on_uninstall'));
-	
-	add_action('my_task_hook', $this->grab_freebies());
 }
 
 public function on_activate() {
@@ -91,7 +99,7 @@ public function options_do_page() {
   			
   			The box below determines whether Grabbber will create posts as drafts or automatically publish them. If you would like to automatically publish posts, leave the box unchecked<br>
   			Create Posts as Drafts  <input type="checkbox" name="<?php echo $this->options_name?>[draft]" value="true" <?php if ($options[draft]==true) echo 'checked="checked" '; ?>> <br>
-  			
+  			  			
   			<p class="submit">
                 <input type="submit" class="button-primary" value="<?php _e('Save Changes') ?>" />
             </p>
@@ -104,10 +112,8 @@ public function options_do_page() {
 // This just echoes the chosen line, we'll position it later
 public function grab_freebies() {
 	$client = new Client;
-	
 	$results = get_option($this->options_name);
 	$results = explode(" ", $results["custom"]);
-	
     $shots = $client->getShotsList();
     foreach ($shots as $shot){
     	foreach ($shot->tags as $tag){
@@ -116,7 +122,7 @@ public function grab_freebies() {
     			$username = $shot->user->username;
     			//echo "<div id='freebie'><img src=$src /><p>$shot->title</p><p>$shot->description</p></div>";
     			$skip = FALSE;
-    			$args = array( 'numberposts' => '100' );
+    			$args = array( 'numberposts' => '8' );
 				$recent_posts = wp_get_recent_posts( $args );
 				foreach( $recent_posts as $recent ){
 					if ($recent["post_title"] === $shot->title) $skip=TRUE;
@@ -125,7 +131,7 @@ public function grab_freebies() {
     			if (!$skip){
     			$post = array(
     				//'ID'             => 57, // Are you updating an existing post?
-  'post_content'   => "$shot->description", // The full text of the post.
+  'post_content'   => "<p>$shot->description</p>This post was created by <a href=https://dribble.com/$username>$username</a> and can be viewed on dribbble <a href=https://dribbble.com/shots/$shot->id>here</a>", // The full text of the post.
   'post_name'      => $shot->title, // The name (slug) for your post
   'post_title'     => $shot->title, // The title of your post.
   'post_status'    => ($results["draft"]==true) ? 'publish' : 'draft', // Default 'draft'.
@@ -133,32 +139,26 @@ public function grab_freebies() {
   'tags_input'     => $shot->tags
     			);
     			
+    			//error_reporting(0);
+    			//$upload_dir = wp_upload_dir();
+				//$image_data = file_get_contents($src);
+				//$filename = basename($src);
+				//if(wp_mkdir_p($upload_dir['path']))
+    			//	$file = $upload_dir['path'] . '/' . $filename;
+				//else
+    			//	$file = $upload_dir['basedir'] . '/' . $filename;
+				//file_put_contents($file, $image_data);
+
+
     			$post_id = wp_insert_post($post, TRUE);
     			
+    			add_action('add_attachment','new_attachment');
     			
+				$attach_id = media_sideload_image( $src, $post_id, $post_id);
     			
-    			error_reporting(0);
-    			$upload_dir = wp_upload_dir();
-$image_data = file_get_contents($src);
-$filename = basename($src);
-if(wp_mkdir_p($upload_dir['path']))
-    $file = $upload_dir['path'] . '/' . $filename;
-else
-    $file = $upload_dir['basedir'] . '/' . $filename;
-file_put_contents($file, $image_data);
+				// we have the Image now, and the function will have fired too setting the thumbnail ID in the process, so lets remove the hook so we don't cause any more trouble 
+				remove_action('add_attachment','new_attachment');
 
-$wp_filetype = wp_check_filetype($filename, null );
-$attachment = array(
-    'post_mime_type' => $wp_filetype['type'],
-    'post_title' => sanitize_file_name($filename),
-    'post_content' => '',
-    'post_status' => 'inherit'
-);
-$attach_id = wp_insert_attachment( $attachment, $file, $post_id );
-$attach_data = wp_generate_attachment_metadata( $attach_id, $file );
-wp_update_attachment_metadata( $attach_id, $attach_data );
-
-set_post_thumbnail( $post_id, $attach_id );
     		}
     		}
     	}
