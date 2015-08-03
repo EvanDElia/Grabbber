@@ -15,6 +15,7 @@ require_once 'Client.php';
 require_once ABSPATH . 'wp-admin/includes/image.php';
 require_once ABSPATH . 'wp-admin/includes/file.php';
 require_once ABSPATH . 'wp-admin/includes/media.php';
+require_once ABSPATH . 'wp-includes/pluggable.php';
 
 function new_attachment($att_id){
     // the post this was sideloaded into is the attachments parent!
