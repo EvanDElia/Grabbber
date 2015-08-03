@@ -7,5 +7,8 @@ Once the plugin is installed and activated, you can view the settings under Sett
 # Download and Install
 Download the entire Github repository. Once the .zip file is downloaded you can go into your admin panel of your wordpress website and go to Plugins -> Add New -> Upload. Browse for the .zip file you just downloaded and click install. Done! Now simply activate the plugin to start adding content to your website!
 
+# Error Fixes
+If word press is giving you any kind of fatal error when creating or deleting a post, simply add require_once('pluggable.php'); to the top of capabilities.php in wp-includes folder
+
 # Contact
 If you have any questions or concerns about the plugin, email me at deliaevan1@gmail.com
